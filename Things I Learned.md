@@ -3,3 +3,5 @@
 * Map is useful for converting from one kind of iterator to another kind of iterator
 * Parse() might need a type annotation
 * Check how you are splitting an input string
+* When matching strings, consider overlapping substrings
+* The .matches() method can take functions and closures as a pattern, but only when the input is a character. It's not possible to use a function with a string input as a pattern
