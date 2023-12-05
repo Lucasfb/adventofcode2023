@@ -1,26 +1,41 @@
-use nom::{IResult, Parser,character::complete::i32,bytes::complete::tag,sequence::{separated_pair, delimited,tuple,terminated}};
-use std::error::Error;
+use nom::{IResult, Parser,character::complete::{i32, alpha0, alpha1,alphanumeric0,space1},bytes::complete::tag,sequence::{separated_pair, delimited,terminated, preceded},combinator::{rest,opt}};
+use nom::multi::separated_list0;
+
 use std::fmt;
 
 #[derive(Debug,PartialEq,Clone)]
+enum Colors {
+    Red(i32),
+    Green(i32),
+    Blue(i32),
+}
+
+ #[derive(Debug,PartialEq,Clone)]
+ struct ColorResult {
+     color: Colors,
+ }
+
+#[derive(Debug,PartialEq,Clone)]
 struct GameSet {
-    Red: i32,
-    Green: i32,
-    Blue: i32,
+    red: i32,
+    green: i32,
+    blue: i32,
 }
 
 #[derive(Debug,PartialEq)]
 struct Game {
     game_ID: i32,
-    sets: [GameSet;3],
+    sets: Vec<GameSet>,
 }
 
 impl fmt::Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Game {}", self.game_ID);
-        writeln!(f,"Set 1: Red: {}, Green: {}, Blue: {}", self.sets[0].Red,self.sets[0].Green,self.sets[0].Blue);
-        writeln!(f,"Set 2: Red: {}, Green: {}, Blue: {}", self.sets[1].Red,self.sets[1].Green,self.sets[1].Blue);
-        writeln!(f,"Set 3: Red: {}, Green: {}, Blue: {}", self.sets[2].Red,self.sets[2].Green,self.sets[2].Blue)
+        Ok(for set in &self.sets{
+            let set_count = 1;
+            writeln!(f,"Set {}: Red: {}, Green: {}, Blue: {}",set_count,set.red,set.green,set.blue);
+
+        })
     }
 }
 
@@ -33,38 +48,100 @@ fn get_game_id(input: &str) -> IResult<&str, i32> {
     Ok((remaining,id))
 }
 
+fn get_color_number_name(input: &str) -> IResult<&str, ColorResult> {
+    let result: ColorResult = ColorResult{color: Colors::Red(0)};
+
+    let (remaining,(color_number,color_name)) = separated_pair(i32, space1, alpha1)(input)?;
+
+
+    let result = {
+        match color_name {
+            "red" => ColorResult{color: Colors::Red(color_number)},
+            "green" => ColorResult{color: Colors::Green(color_number)},
+            "blue" => ColorResult{color: Colors::Blue(color_number)},
+            _ => panic!("Not a color"),
+        }
+    };
+
+    Ok((remaining,result)) // Empty
+}
+
 fn get_game_set(input: &str) -> IResult<&str, GameSet> {
     // Parse from X green, Y blue, Z red to a struct
     // Order of colors doesn't matter
 
+    let mut new_game: GameSet = GameSet{red:0,green:0,blue:0}; // Empty
+
+    let (remaining,first_color) = get_color_number_name(input)?;
+
+    match first_color.color {
+        Colors::Red(x) => { new_game.red = x},
+        Colors::Green(x) => { new_game.green = x},
+        Colors::Blue(x) => { new_game.blue = x},
+    }
+
+    let (remaining,optional_second_color) = opt(preceded(tag(", "), get_color_number_name))(remaining)?;
+
     
 
-    let empty_game_set: GameSet = GameSet{Red:0,Green:0,Blue:0}; // Empty
-    Ok((input,empty_game_set)) // Do nothing
+    // Using nested matches here is not good. There probably is another way
+    match optional_second_color {
+        Some(x) => {
+            match x.color {
+                Colors::Red(x) => { new_game.red = x},
+                Colors::Green(x) => { new_game.green = x},
+                Colors::Blue(x) => { new_game.blue = x},
+            }
+        }
+        None => (),
+    }
+
+    
+    let (remaining,optional_third_color) = opt(preceded(tag(", "), get_color_number_name))(remaining)?;
+
+    match optional_third_color {
+        Some(x) => {
+            match x.color {
+                Colors::Red(x) => { new_game.red = x},
+                Colors::Green(x) => { new_game.green = x},
+                Colors::Blue(x) => { new_game.blue = x},
+            }
+        }
+        None => (),
+    }
+
+    //let empty_game_set: GameSet = GameSet{Red:0,Green:0,Blue:0}; // Empty
+    Ok((remaining,new_game)) // Do nothing
 }
 
 
 fn get_game(input: &str) -> IResult<&str,Game>{
-    let empty_game_set: GameSet = GameSet{Red:0,Green:0,Blue:0}; // Empty
+    let empty_game_set: GameSet = GameSet{red:0,green:0,blue:0}; // Empty
+
+    
 
     let (remaining_all_sets,game_id) = get_game_id(input)?;
 
-    let (remaining_sets,set_1) = terminated(
-        get_game_set,
-        tag("; ")
-    )(remaining_all_sets)?;
+    let mut new_game = Game{game_ID:game_id,sets:Vec::new()};
 
-    //let (remaining,(set_2,set_3)) = separated_pair(
-    //    get_game_set,
-    //    tag("; "),
-    //    get_game_set,
-    //)(remaining_sets)?;
 
-    Ok((input,Game{game_ID:game_id,sets:[empty_game_set.clone(),empty_game_set.clone(),empty_game_set.clone()]}))
+    // There is always at least 1 set
+    // let (remaining_sets,set_1) = get_game_set(remaining_all_sets)?;
+
+    // new_game.sets.push(set_1);
+        
+
+    let (remaining,mut list_of_sets) = separated_list0(tag("; "), get_game_set)(remaining_all_sets)?;
+
+    new_game.sets.append(&mut list_of_sets);
+
+    // while remaining_sets != "" {
+    //     let (remaining_sets, new_set) = preceded(tag("; "),get_game_set)(remaining_sets)?;
+    //     new_game.sets.push(new_set);
+    // }
+
+    Ok((remaining,new_game))
 }
-
-
-
 
 fn main()  {
     println!("Advent of Code 2022 - Day 2");
@@ -73,18 +150,43 @@ fn main()  {
     let game_list_input:Vec<&str> = input.split("\n").collect(); // Split on newline
 
     // Parse the input and create a list of all games
-
+    let mut game_list: Vec<Game> = Vec::new();
     for game in game_list_input {
         let (_,parsed_game) = get_game(game).unwrap();
-        println!("Game: {}",parsed_game);
+        game_list.push(parsed_game);
+        //println!("{}",parsed_game);
     }
 
     // Part 1
+    let mut possible_games_sum_id = 0;
 
+    for game in game_list {
+
+        let mut possible_game = true;
+
+        for set in game.sets {
+            if (set.red > 12 || set.green > 13 || set.blue > 14) {
+                possible_game = false;
+            }
+        }
+
+        if possible_game {
+            possible_games_sum_id += game.game_ID;
+        }
+
+
+    }
+
+    println!("Answer for Part One: {}",possible_games_sum_id);
+
+
+
+
+    println!("Answer for Part Two: {}",possible_games_sum_id);
 
 }
 
 fn open_input_file() -> String {
-    let input_filename = "sample_input.txt";
+    let input_filename = "input.txt";
     fs_err::read_to_string(input_filename).unwrap()
 }
