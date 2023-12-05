@@ -1,28 +1,28 @@
 use nom::{IResult, Parser,character::complete::{i32, alpha0, alpha1,alphanumeric0,space1},bytes::complete::tag,sequence::{separated_pair, delimited,terminated, preceded},combinator::{rest,opt}};
 use nom::multi::separated_list0;
 
-use std::fmt;
+use std::{fmt, cmp::max};
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug,PartialEq,Clone,Copy)]
 enum Colors {
     Red(i32),
     Green(i32),
     Blue(i32),
 }
 
- #[derive(Debug,PartialEq,Clone)]
+ #[derive(Debug,PartialEq,Clone,Copy)]
  struct ColorResult {
      color: Colors,
  }
 
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug,PartialEq,Clone,Copy)]
 struct GameSet {
     red: i32,
     green: i32,
     blue: i32,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone)]
 struct Game {
     game_ID: i32,
     sets: Vec<GameSet>,
@@ -160,7 +160,7 @@ fn main()  {
     // Part 1
     let mut possible_games_sum_id = 0;
 
-    for game in game_list {
+    for game in game_list.clone() {
 
         let mut possible_game = true;
 
@@ -181,8 +181,26 @@ fn main()  {
 
 
 
+    // Part 2
+    let mut sum_of_power_of_min_set = 0;
 
-    println!("Answer for Part Two: {}",possible_games_sum_id);
+    for game in game_list {
+
+        let mut min_possible_red = 0;
+        let mut min_possible_green = 0;
+        let mut min_possible_blue = 0;
+
+        for set in game.sets {
+            min_possible_red = max(min_possible_red,set.red);
+            min_possible_green = max(min_possible_green,set.green);
+            min_possible_blue = max(min_possible_blue,set.blue); 
+        }
+
+        sum_of_power_of_min_set += min_possible_red*min_possible_blue*min_possible_green;
+
+    }
+
+    println!("Answer for Part Two: {}",sum_of_power_of_min_set);
 
 }
 
