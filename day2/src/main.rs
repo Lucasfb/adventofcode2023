@@ -1,4 +1,4 @@
-use nom::{IResult, Parser,character::complete::{i32, alpha0, alpha1,alphanumeric0,space1},bytes::complete::tag,sequence::{separated_pair, delimited,terminated, preceded},combinator::{rest,opt}};
+use nom::{IResult, character::complete::{i32, alpha1,space1},bytes::complete::tag,sequence::{separated_pair, delimited,preceded},combinator::{opt}};
 use nom::multi::separated_list0;
 
 use std::{fmt, cmp::max};
@@ -82,8 +82,6 @@ fn get_game_set(input: &str) -> IResult<&str, GameSet> {
 
     let (remaining,optional_second_color) = opt(preceded(tag(", "), get_color_number_name))(remaining)?;
 
-    
-
     // Using nested matches here is not good. There probably is another way
     match optional_second_color {
         Some(x) => {
@@ -95,7 +93,6 @@ fn get_game_set(input: &str) -> IResult<&str, GameSet> {
         }
         None => (),
     }
-
     
     let (remaining,optional_third_color) = opt(preceded(tag(", "), get_color_number_name))(remaining)?;
 
@@ -118,27 +115,13 @@ fn get_game_set(input: &str) -> IResult<&str, GameSet> {
 fn get_game(input: &str) -> IResult<&str,Game>{
     let empty_game_set: GameSet = GameSet{red:0,green:0,blue:0}; // Empty
 
-    
-
     let (remaining_all_sets,game_id) = get_game_id(input)?;
 
     let mut new_game = Game{game_ID:game_id,sets:Vec::new()};
 
-
-    // There is always at least 1 set
-    // let (remaining_sets,set_1) = get_game_set(remaining_all_sets)?;
-
-    // new_game.sets.push(set_1);
-        
-
     let (remaining,mut list_of_sets) = separated_list0(tag("; "), get_game_set)(remaining_all_sets)?;
 
     new_game.sets.append(&mut list_of_sets);
-
-    // while remaining_sets != "" {
-    //     let (remaining_sets, new_set) = preceded(tag("; "),get_game_set)(remaining_sets)?;
-    //     new_game.sets.push(new_set);
-    // }
 
     Ok((remaining,new_game))
 }
@@ -178,7 +161,6 @@ fn main()  {
     }
 
     println!("Answer for Part One: {}",possible_games_sum_id);
-
 
 
     // Part 2
