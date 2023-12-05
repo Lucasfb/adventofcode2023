@@ -3,7 +3,7 @@ use nom::{
     character::complete::{i32, alpha1,space1},
     bytes::complete::tag,
     sequence::{separated_pair, delimited,preceded},
-    combinator::{opt},
+    combinator::opt,
     multi::separated_list0};
 
 use std::{fmt, cmp::max};
@@ -29,13 +29,13 @@ struct GameSet {
 
 #[derive(Debug,PartialEq,Clone)]
 struct Game {
-    game_ID: i32,
+    game_id: i32,
     sets: Vec<GameSet>,
 }
 
 impl fmt::Display for Game {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Game {}", self.game_ID);
+        writeln!(f, "Game {}", self.game_id);
         Ok(for set in &self.sets{
             let set_count = 1;
             writeln!(f,"Set {}: Red: {}, Green: {}, Blue: {}",set_count,set.red,set.green,set.blue);
@@ -54,10 +54,8 @@ fn get_game_id(input: &str) -> IResult<&str, i32> {
 }
 
 fn get_color_number_name(input: &str) -> IResult<&str, ColorResult> {
-    let result: ColorResult = ColorResult{color: Colors::Red(0)};
 
     let (remaining,(color_number,color_name)) = separated_pair(i32, space1, alpha1)(input)?;
-
 
     let result = {
         match color_name {
@@ -118,11 +116,11 @@ fn get_game_set(input: &str) -> IResult<&str, GameSet> {
 
 
 fn get_game(input: &str) -> IResult<&str,Game>{
-    let empty_game_set: GameSet = GameSet{red:0,green:0,blue:0}; // Empty
+    //let empty_game_set: GameSet = GameSet{red:0,green:0,blue:0}; // Empty
 
     let (remaining_all_sets,game_id) = get_game_id(input)?;
 
-    let mut new_game = Game{game_ID:game_id,sets:Vec::new()};
+    let mut new_game = Game{game_id,sets:Vec::new()};
 
     let (remaining,mut list_of_sets) = separated_list0(tag("; "), get_game_set)(remaining_all_sets)?;
 
@@ -159,7 +157,7 @@ fn main()  {
         }
 
         if possible_game {
-            possible_games_sum_id += game.game_ID;
+            possible_games_sum_id += game.game_id;
         }
 
 
