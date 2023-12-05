@@ -1,5 +1,10 @@
-use nom::{IResult, character::complete::{i32, alpha1,space1},bytes::complete::tag,sequence::{separated_pair, delimited,preceded},combinator::{opt}};
-use nom::multi::separated_list0;
+use nom::{
+    IResult, 
+    character::complete::{i32, alpha1,space1},
+    bytes::complete::tag,
+    sequence::{separated_pair, delimited,preceded},
+    combinator::{opt},
+    multi::separated_list0};
 
 use std::{fmt, cmp::max};
 
